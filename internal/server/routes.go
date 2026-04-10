@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"job_match_api/internal/model"
@@ -44,7 +43,7 @@ func (s *Server) analyzeHandler(c *gin.Context) {
 	data := model.AnalyzeRequest{}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		log.Fatal(err)
+		c.JSON(400, err)
 	}
 	fmt.Println(data)
 	c.JSON(http.StatusOK, "success")
