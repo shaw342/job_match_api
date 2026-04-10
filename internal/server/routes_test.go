@@ -37,29 +37,54 @@ func TestHelloWorldHandler(t *testing.T) {
 	}
 }
 
-func TestHealthAnalyeHandler(t *testing.T) {
+func TestHealthAnalyzeHandler(t *testing.T) {
 	s := &Server{}
 	r := gin.New()
 
 	r.POST("/v1/cv/analyze", s.analyzeHandler)
 
-	data := model.AnalyzeRequest{
-		JobDescription: "Backend Go developer with PostgreSQL and Docker experience",
-		CVText:         "Jean Dupont, backend developer, Go, REST APIs, Docker...",
-	}
+	t.Run("test with content for Analyze cv", func(t *testing.T) {
+		data := model.AnalyzeRequest{
+			JobDescription: "Backend Go developer with PostgreSQL and Docker experience",
+			CVText:         "Jean Dupont, backend developer, Go, REST APIs, Docker...",
+		}
 
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		t.Error(err)
-	}
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			t.Error(err)
+		}
 
-	req, err := http.NewRequest("POST", "/v1/cv/analyze", bytes.NewBuffer(jsonData))
-	if err != nil {
-		t.Fatal(err)
-	}
+		req, err := http.NewRequest("POST", "/v1/cv/analyze", bytes.NewBuffer(jsonData))
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	rr := httptest.NewRecorder()
-	r.ServeHTTP(rr, req)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
 
-	assert.Equal(t, http.StatusOK, rr.Code, "success")
+		assert.NotEmpty(t, rr.Body)
+		assert.Equal(t, http.StatusOK, rr.Code)
+	})
+
+	t.Run("test with empty content", func(t *testing.T) {
+		data := model.AnalyzeRequest{
+			JobDescription: "",
+			CVText:         "Jean Dupont, backend developer, Go, REST APIs, Docker...",
+		}
+
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			t.Error(err)
+		}
+
+		req, err := http.NewRequest("POST", "/v1/cv/analyze", bytes.NewBuffer(jsonData))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusUnprocessableEntity, rr.Code)
+	})
 }
