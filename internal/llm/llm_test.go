@@ -5,6 +5,8 @@ import (
 
 	"job_match_api/internal/llm"
 	"job_match_api/internal/model"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAnalyze(t *testing.T) {
@@ -17,5 +19,5 @@ func TestAnalyze(t *testing.T) {
 		t.Log(err)
 	}
 
-	t.Log(result)
+	assert.NotEmpty(t, result)
 }
