@@ -1,9 +1,9 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
+	"job_match_api/internal/llm"
 	"job_match_api/internal/model"
 
 	"github.com/gin-contrib/cors"
@@ -44,7 +44,19 @@ func (s *Server) analyzeHandler(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&data); err != nil {
 		c.JSON(400, err)
+		return
 	}
-	fmt.Println(data)
-	c.JSON(http.StatusOK, "success")
+
+	if data.JobDescription == "" {
+		c.JSON(422, "empty Job description")
+		return
+	}
+
+	result, err := llm.Analyze(data)
+	if err != nil {
+		c.JSON(500, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }
