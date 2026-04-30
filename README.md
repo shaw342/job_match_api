@@ -1,4 +1,4 @@
-# jobmatch-api
+# job-match-api
 
 API Go qui analyse un CV en texte et une offre d'emploi via un LLM, et retourne un score de matching, un résumé du profil, les compétences communes, les compétences manquantes, et des recommandations actionnables.
 
