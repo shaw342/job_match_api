@@ -164,6 +164,3 @@ make itest
 | `make docker-down` | Arrête PostgreSQL |
 | `make clean` | Supprime le binaire compilé |
 
-## Spec
-
-La spec complète V1 est dans `instctuin_spec_v1.md`.
