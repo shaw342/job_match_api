@@ -1,53 +1,169 @@
-# Project job_match_api
+# jobmatch-api
 
-One Paragraph of project description goes here
+API Go qui analyse un CV en texte et une offre d'emploi via un LLM, et retourne un score de matching, un résumé du profil, les compétences communes, les compétences manquantes, et des recommandations actionnables.
 
-## Getting Started
+## Stack
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+- **Go** 1.25
+- **Gin** — framework HTTP
+- **PostgreSQL** — base de données (via `pgx`)
+- **OpenRouter** — accès aux modèles LLM (modèle utilisé : `openai/gpt-oss-120b:free`)
+- **Docker Compose** — orchestration locale de la DB
+- **Air** — live reload en développement
 
-## MakeFile
+## Architecture
 
-Run build make command with tests
-```bash
-make all
+```
+.
+├── cmd/api/main.go              # Entrée du serveur HTTP + graceful shutdown
+├── internal/
+│   ├── server/                  # Configuration serveur + routes
+│   ├── llm/                     # Appel OpenRouter + parsing de la réponse
+│   ├── model/                   # Structures partagées (request/response)
+│   └── database/                # Service PostgreSQL
+├── docker-compose.yml           # Service PostgreSQL
+├── Makefile                     # Commandes courantes
+└── .env                         # Variables d'environnement (non versionné)
 ```
 
-Build the application
+## Prérequis
+
+- Go 1.25+
+- Docker & Docker Compose
+- Une clé API OpenRouter (https://openrouter.ai/)
+
+## Installation
+
 ```bash
-make build
+git clone <repo-url>
+cd job_match_api
+go mod download
 ```
 
-Run the application
-```bash
-make run
+## Configuration
+
+Créer un fichier `.env` à la racine :
+
+```env
+PORT=8080
+APP_ENV=local
+
+BLUEPRINT_DB_HOST=localhost
+BLUEPRINT_DB_PORT=5432
+BLUEPRINT_DB_DATABASE=blueprint
+BLUEPRINT_DB_USERNAME=melkey
+BLUEPRINT_DB_PASSWORD=password1234
+BLUEPRINT_DB_SCHEMA=public
+
+OPENROUTER_API_KEY=sk-or-v1-...
 ```
-Create DB container
+
+## Démarrage
+
+Lancer la base de données :
 ```bash
 make docker-run
 ```
 
-Shutdown DB Container
+Lancer l'API :
 ```bash
-make docker-down
+make run
 ```
 
-DB Integrations Test:
-```bash
-make itest
-```
-
-Live reload the application:
+Mode live reload (avec `air`) :
 ```bash
 make watch
 ```
 
-Run the test suite:
+L'API écoute sur `http://localhost:8080`.
+
+## Endpoints
+
+### `GET /`
+Renvoie un message de bienvenue.
+
+### `GET /health`
+État de santé de la base de données.
+
+### `POST /v1/cv/analyze`
+Analyse un CV face à une description de poste.
+
+**Requête** :
+```json
+{
+  "job_description": "Backend Go developer with PostgreSQL and Docker experience",
+  "cv_text": "Jean Dupont, backend developer, Go, REST APIs, Docker..."
+}
+```
+
+**Réponse `200`** :
+```json
+{
+  "match_score": 78,
+  "summary": "Backend Go developer with strong API and Docker experience.",
+  "matched_skills": ["Go", "REST", "Docker"],
+  "missing_skills": ["Kubernetes", "OpenTelemetry"],
+  "recommendations": [
+    "Ajoute un projet avec observabilité.",
+    "Mentionne la CI/CD.",
+    "Mets en avant ton expérience PostgreSQL."
+  ]
+}
+```
+
+**Codes d'erreur** :
+- `400` — requête invalide (champ manquant ou vide)
+- `422` — contenu impossible à analyser
+- `500` — erreur serveur ou échec de l'appel LLM
+
+**Format d'erreur** :
+```json
+{
+  "error": {
+    "code": "INVALID_REQUEST",
+    "message": "job_description is required"
+  }
+}
+```
+
+## Exemple d'appel
+
+```bash
+curl -X POST http://localhost:8080/v1/cv/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job_description": "Backend Go developer with PostgreSQL and Docker experience",
+    "cv_text": "Jean Dupont, backend developer, Go, REST APIs, Docker..."
+  }'
+```
+
+## Tests
+
+Tous les tests :
 ```bash
 make test
 ```
 
-Clean up binary from the last build:
+Tests d'intégration DB uniquement :
 ```bash
-make clean
+make itest
 ```
+
+> Note : `TestAnalyze` appelle réellement OpenRouter et nécessite une clé API valide.
+
+## Commandes Makefile
+
+| Commande | Description |
+|---|---|
+| `make build` | Compile le binaire dans `./main` |
+| `make run` | Lance l'API |
+| `make watch` | Live reload via `air` |
+| `make test` | Lance la suite de tests |
+| `make itest` | Tests d'intégration de la DB |
+| `make docker-run` | Démarre PostgreSQL via Docker Compose |
+| `make docker-down` | Arrête PostgreSQL |
+| `make clean` | Supprime le binaire compilé |
+
+## Spec
+
+La spec complète V1 est dans `instctuin_spec_v1.md`.
